@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>找回密码</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #f0f4f8;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+        }
+        .card { width: 420px; border-radius: 16px; box-shadow: 0 4px 24px rgba(0,0,0,0.08); }
+        .title { color: #1e3a8a; font-weight: 700; }
+    </style>
+</head>
+<body>
+<div class="card p-4">
+    <div class="card-body">
+        <h4 class="title text-center mb-4">找回密码</h4>
+
+        <!-- 第一步：输入账号 -->
+        <div id="step1">
+            <div class="mb-3">
+                <label class="form-label">账号</label>
+                <div class="input-group">
+                    <input type="text" id="account" class="form-control" placeholder="请输入账号">
+                    <button class="btn btn-outline-primary" onclick="checkAccount()">确认</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 第二步：回答密保 -->
+        <div id="step2" style="display:none;">
+            <div class="mb-3">
+                <label class="form-label fw-bold text-primary" id="question-label"></label>
+            </div>
+            <div class="mb-3">
+                <label class="form-label">密保答案</label>
+                <input type="text" id="answer" class="form-control" placeholder="请输入密保答案">
+            </div>
+            <div class="mb-3">
+                <label class="form-label">新密码</label>
+                <input type="password" id="new-password" class="form-control" placeholder="请输入新密码">
+            </div>
+            <button class="btn btn-primary w-100" onclick="resetPassword()">重置密码</button>
+        </div>
+
+        <div id="result-msg" class="mt-2 small"></div>
+
+        <div class="text-center mt-3">
+            <a href="login.html" class="text-secondary small">返回登录</a>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    async function checkAccount() {
+        const username = document.getElementById('account').value.trim();
+        if (!username) { showMsg('请输入账号', 'danger'); return; }
+
+        const res = await fetch(`/api/auth/security-question?username=${username}`);
+        const data = await res.json();
+
+        if (data.code === 200) {
+            document.getElementById('question-label').textContent = '密保问题：' + data.data;
+            document.getElementById('step2').style.display = 'block';
+        } else {
+            showMsg(data.message, 'danger');
+        }
+    }
+
+    async function resetPassword() {
+        const username = document.getElementById('account').value.trim();
+        const answer   = document.getElementById('answer').value.trim();
+        const newPwd   = document.getElementById('new-password').value.trim();
+
+        if (!answer || !newPwd) { showMsg('请填写所有字段', 'danger'); return; }
+
+        const res = await fetch('/api/auth/reset-password', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username, answer, newPassword: newPwd })
+        });
+        const data = await res.json();
+
+        if (data.code === 200) {
+            showMsg('密码重置成功！正在跳转...', 'success');
+            setTimeout(() => window.location.href = 'login.html', 2000);
+        } else {
+            showMsg(data.message, 'danger');
+        }
+    }
+
+    function showMsg(msg, type) {
+        const el = document.getElementById('result-msg');
+        el.className = `text-${type} small`;
+        el.textContent = msg;
+    }
+</script>
+</body>
+</html>
